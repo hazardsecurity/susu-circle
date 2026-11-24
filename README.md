@@ -24,6 +24,12 @@ Susu Circle puts the circle in a Move smart contract:
 
 Built for the CLAY (Code Like a Yeti) hackathon, run by Lofi the Yeti.
 
+## Live on Sui testnet
+
+- Package ID: `0x4fecfb6741352b8b10159b2a6f0c7d5bbf714d976faa0a7d1a60809ad25614c5`
+- Explorer: [view on Suiscan](https://suiscan.xyz/testnet/object/0x4fecfb6741352b8b10159b2a6f0c7d5bbf714d976faa0a7d1a60809ad25614c5)
+- Module: `susu::circle`
+
 ## How a circle runs
 
 1. **Open:** the creator sets a name, contribution per round, round length and number of
@@ -84,7 +90,7 @@ Copy the `PackageID` from the publish output.
 
 ```bash
 cd web
-cp .env.local.example .env.local   # then paste your package ID
+cp .env.local.example .env.local   # uses the testnet package above; swap in your own if you republish
 npm install
 npm run dev
 ```

@@ -5,10 +5,10 @@
 - [ ] Project title: **Susu Circle**
 - [ ] Description (below)
 - [ ] Logo, square JPG or PNG
-- [ ] Public GitHub repository
+- [x] Public GitHub repository: https://github.com/MikaelsonInitiativeOrg/susu-circle
 - [ ] Demo video, 3–5 minutes, YouTube link
 - [ ] Website (optional, recommended): deployed `web/`
-- [ ] Package ID (optional): from `sui client publish`
+- [x] Package ID: 0x4fecfb6741352b8b10159b2a6f0c7d5bbf714d976faa0a7d1a60809ad25614c5
 - [ ] Docs (optional): link the README
 
 Before you submit, confirm this round's deadline with the organizers (Telegram: t.me/lofitheyeti).
