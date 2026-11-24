@@ -23,3 +23,16 @@ export const DEMO_CIRCLE: Circle = {
   strikes: Object.fromEntries(members.map((m, i) => [m, i === 4 ? 1 : 0])),
   totalPaidOut: (SUI / 2n) * 10n,
 };
+
+/** Decorative circle for the home page scene. */
+const heroMembers = [a(1), a(2), a(3), a(4), a(5), a(6)];
+export const HERO_CIRCLE: Circle = {
+  ...DEMO_CIRCLE,
+  id: "hero",
+  members: heroMembers,
+  maxMembers: 6,
+  round: 2,
+  paid: [heroMembers[0], heroMembers[1], heroMembers[3], heroMembers[5]],
+  deposits: {},
+  strikes: {},
+};

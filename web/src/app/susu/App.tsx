@@ -9,10 +9,12 @@ import {
 import { ConnectButton } from "@mysten/dapp-kit-react/ui";
 import type { Transaction } from "@mysten/sui/transactions";
 import { useCallback, useEffect, useState } from "react";
-import { PACKAGE_ID, explainError, fetchRecentCircles, type CircleSummary } from "@/lib/susu";
-import { dAppKit } from "./dapp-kit";
+import { COIN_SYMBOL, PACKAGE_ID, explainError, fetchRecentCircles, fmt, type CircleSummary } from "@/lib/susu";
+import { Campfire } from "./Campfire";
 import { CircleView } from "./CircleView";
 import { CreateCircle } from "./CreateCircle";
+import { dAppKit } from "./dapp-kit";
+import { HERO_CIRCLE } from "./demo";
 
 export default function App() {
   return (
@@ -24,16 +26,14 @@ export default function App() {
 
 export type RunTx = (tx: Transaction, success: string) => Promise<boolean>;
 
-function readCircleFromUrl() {
-  return new URLSearchParams(window.location.search).get("circle");
-}
-
 function Shell() {
   const account = useCurrentAccount();
   const client = useCurrentClient();
   const kit = useDAppKit();
 
-  const [selected, setSelected] = useState<string | null>(() => readCircleFromUrl());
+  const [selected, setSelected] = useState<string | null>(() =>
+    new URLSearchParams(window.location.search).get("circle"),
+  );
   const [recent, setRecent] = useState<CircleSummary[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -45,19 +45,8 @@ function Shell() {
     if (id) url.searchParams.set("circle", id);
     else url.searchParams.delete("circle");
     window.history.replaceState(null, "", url);
+    window.scrollTo({ top: 0 });
   }, []);
-
-  const loadRecent = useCallback(async () => {
-    if (!PACKAGE_ID) return [];
-    try {
-      const list = await fetchRecentCircles(client);
-      setRecent(list);
-      return list;
-    } catch {
-      setRecent([]);
-      return [];
-    }
-  }, [client]);
 
   useEffect(() => {
     if (!PACKAGE_ID) return;
@@ -95,16 +84,17 @@ function Shell() {
   );
 
   const onCreated = useCallback(async () => {
-    const list = await loadRecent();
+    const list = await fetchRecentCircles(client).catch(() => []);
+    setRecent(list);
     const mine = list.find((c) => c.creator === account?.address);
     if (mine) select(mine.id);
-  }, [loadRecent, account, select]);
+  }, [client, account, select]);
 
   return (
     <div className="page">
       <header className="top">
-        <button className="brand" onClick={() => select(null)} aria-label="Susu Circle home">
-          <RingMark />
+        <button className="brand" onClick={() => select(null)} aria-label="Susu Circle, home">
+          <BrandMark />
           <span>Susu Circle</span>
         </button>
         <span className="net">Sui testnet</span>
@@ -122,123 +112,161 @@ function Shell() {
         </div>
       )}
 
-      {!PACKAGE_ID && selected !== "demo" ? (
-        <SetupNeeded onDemo={() => select("demo")} />
-      ) : (
-        <div className="layout">
-          <aside className="rail">
-            <CreateCircle connected={!!account && !!PACKAGE_ID} busy={busy} run={run} onCreated={onCreated} />
-            <section className="recent">
-              <h2>Recent circles</h2>
-              {!PACKAGE_ID ? (
-                <p className="quiet">Circles show up here once the contract is published.</p>
-              ) : recent === null ? (
-                <p className="quiet">Loading…</p>
-              ) : recent.length === 0 ? (
-                <p className="quiet">No circles yet. Open the first one.</p>
-              ) : (
-                <ul>
-                  {recent.map((c) => (
-                    <li key={c.id}>
-                      <button
-                        className={c.id === selected ? "row row-on" : "row"}
-                        onClick={() => select(c.id)}
-                      >
-                        <span className="row-name">{c.name}</span>
-                        <span className="row-meta">
-                          {c.maxMembers} seats
-                          {c.creator === account?.address ? ", yours" : ""}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          </aside>
-
-          <main className="main">
-            {selected ? (
-              <CircleView key={selected} id={selected} busy={busy} run={run} version={version} />
-            ) : (
-              <Intro onDemo={() => select("demo")} />
-            )}
-          </main>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Intro({ onDemo }: { onDemo: () => void }) {
-  return (
-    <div className="intro">
-      <h1>Save together. Take turns collecting the pot.</h1>
-      <p>
-        A susu is a savings circle: everyone pays the same amount each round, and each round one
-        member takes the whole pot. Here a Sui smart contract holds the money, picks the payout
-        order at random, and covers anyone who misses a payment from their deposit.
-      </p>
-      <ol className="steps">
-        <li>
-          <strong>Open a circle.</strong> Set the contribution, round length and number of seats.
-        </li>
-        <li>
-          <strong>Invite members.</strong> Each one locks a deposit to take a seat.
-        </li>
-        <li>
-          <strong>Start it.</strong> On-chain randomness shuffles who gets paid first.
-        </li>
-        <li>
-          <strong>Pay each round.</strong> When everyone has paid, anyone can release the pot.
-        </li>
-        <li>
-          <strong>Get your deposit back</strong> after the last round.
-        </li>
-      </ol>
-      <button className="btn btn-quiet" onClick={onDemo}>
-        See a sample circle
-      </button>
-    </div>
-  );
-}
-
-function SetupNeeded({ onDemo }: { onDemo: () => void }) {
-  return (
-    <div className="intro">
-      <h1>Connect the contract</h1>
-      <p>
-        This app needs the ID of the published Susu package. Publish it from the <code>move</code>{" "}
-        folder, then set <code>NEXT_PUBLIC_SUSU_PACKAGE_ID</code> in <code>web/.env.local</code>{" "}
-        and restart the dev server.
-      </p>
-      <pre>
-        <code>cd move && sui client publish</code>
-      </pre>
-      <button className="btn btn-quiet" onClick={onDemo}>
-        See a sample circle
-      </button>
-    </div>
-  );
-}
-
-function RingMark() {
-  const seats = 6;
-  return (
-    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-      <circle cx="14" cy="14" r="9" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      {Array.from({ length: seats }, (_, i) => {
-        const a = (i / seats) * Math.PI * 2 - Math.PI / 2;
-        return (
-          <circle
-            key={i}
-            cx={14 + 9 * Math.cos(a)}
-            cy={14 + 9 * Math.sin(a)}
-            r={i === 0 ? 3.4 : 2.4}
-            fill={i === 0 ? "var(--marigold)" : "currentColor"}
+      <main>
+        {selected ? (
+          <CircleView
+            key={selected}
+            id={selected}
+            busy={busy}
+            run={run}
+            version={version}
+            onBack={() => select(null)}
           />
-        );
-      })}
+        ) : (
+          <Home
+            connected={!!account}
+            busy={busy}
+            run={run}
+            recent={recent}
+            me={account?.address}
+            onSelect={select}
+            onCreated={onCreated}
+          />
+        )}
+      </main>
+
+      <footer className="foot">
+        Built on Sui for the CLAY hackathon. Testnet only: use faucet SUI, not real money.
+      </footer>
+    </div>
+  );
+}
+
+function Home(props: {
+  connected: boolean;
+  busy: boolean;
+  run: RunTx;
+  recent: CircleSummary[] | null;
+  me?: string;
+  onSelect: (id: string) => void;
+  onCreated: () => void;
+}) {
+  return (
+    <>
+      <section className="hero">
+        <div className="hero-copy">
+          <h1 className="rise" style={{ "--d": 0 } as React.CSSProperties}>
+            Save together, by the fire.
+          </h1>
+          <p className="rise" style={{ "--d": 1 } as React.CSSProperties}>
+            A susu is a savings circle. Everyone adds the same amount each round, and each round one
+            member takes the whole pot home. Here a Sui smart contract keeps the pot, draws the order
+            at random, and covers anyone who misses a round from their deposit.
+          </p>
+          <div className="hero-actions rise" style={{ "--d": 2 } as React.CSSProperties}>
+            <a className="btn btn-brand" href="#open">
+              Open a circle
+            </a>
+            <button className="btn btn-ghost" onClick={() => props.onSelect("demo")}>
+              Watch a sample round
+            </button>
+          </div>
+        </div>
+        <Campfire circle={HERO_CIRCLE} compact />
+      </section>
+
+      <section className="how" aria-labelledby="how-h" ref={revealRef}>
+        <h2 id="how-h">How a circle works</h2>
+        <ol>
+          <li className="how-item">
+            <strong>Open a circle.</strong> Pick how much each round is, how long a round lasts, and how
+            many seats.
+          </li>
+          <li className="how-item">
+            <strong>Invite your people.</strong> Each one locks a deposit to take a seat.
+          </li>
+          <li className="how-item">
+            <strong>Light the fire.</strong> On-chain randomness draws who collects first.
+          </li>
+          <li className="how-item">
+            <strong>Add to the fire each round.</strong> Once everyone&apos;s paid, anyone can pass the
+            pot.
+          </li>
+          <li className="how-item">
+            <strong>Take your deposit home</strong> after the last round.
+          </li>
+        </ol>
+      </section>
+
+      <div className="home-grid" id="open" ref={revealRef}>
+        {PACKAGE_ID ? (
+          <CreateCircle connected={props.connected} busy={props.busy} run={props.run} onCreated={props.onCreated} />
+        ) : (
+          <section className="panel">
+            <h2>Connect the contract</h2>
+            <p className="quiet">
+              Publish the Move package, then set <code>NEXT_PUBLIC_SUSU_PACKAGE_ID</code> in{" "}
+              <code>web/.env.local</code> and restart the dev server.
+            </p>
+          </section>
+        )}
+
+        <section className="recent" aria-labelledby="recent-h">
+          <h2 id="recent-h">Fires burning now</h2>
+          {!PACKAGE_ID ? (
+            <p className="quiet">Circles show up here once the contract is connected.</p>
+          ) : props.recent === null ? (
+            <p className="quiet">Looking for circles…</p>
+          ) : props.recent.length === 0 ? (
+            <p className="quiet">No circles yet. Open the first one and invite your people.</p>
+          ) : (
+            <ul>
+              {props.recent.map((c) => (
+                <li key={c.id}>
+                  <button className="row" onClick={() => props.onSelect(c.id)}>
+                    <span className="row-name">{c.name}</span>
+                    <span className="row-meta">
+                      {fmt(c.contribution)} {COIN_SYMBOL} a round, {c.maxMembers} seats
+                      {c.creator === props.me ? ", yours" : ""}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </>
+  );
+}
+
+/** Adds "is-in" once the element scrolls into view, so its children can rise in. */
+function revealRef(el: HTMLElement | null) {
+  if (!el || el.dataset.reveal) return;
+  el.dataset.reveal = "pending";
+  if (!("IntersectionObserver" in window)) {
+    el.dataset.reveal = "in";
+    return;
+  }
+  const io = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        el.dataset.reveal = "in";
+        io.disconnect();
+      }
+    },
+    { threshold: 0.2 },
+  );
+  io.observe(el);
+}
+
+function BrandMark() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+      <path d="M15 4 C9 9 9 15 12 18 C11 14 14 12 15 9 C16 13 20 14 18 19 C22 16 22 9 15 4 Z" fill="var(--brand)" />
+      <path d="M15 11 C12 14 13 17 15 19 C17 17 18 14 15 11 Z" fill="var(--flame)" />
+      <rect x="6" y="21" width="18" height="3.4" rx="1.7" fill="var(--log)" transform="rotate(10 15 22.7)" />
+      <rect x="6" y="21" width="18" height="3.4" rx="1.7" fill="var(--log)" transform="rotate(-10 15 22.7)" />
     </svg>
   );
 }

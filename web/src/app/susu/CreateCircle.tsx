@@ -51,7 +51,7 @@ export function CreateCircle(props: {
   }
 
   return (
-    <form className="create" onSubmit={submit}>
+    <form className="panel create" onSubmit={submit}>
       <h2>Open a circle</h2>
       <label>
         Name
@@ -90,11 +90,11 @@ export function CreateCircle(props: {
         </label>
       </div>
       <p className="hint">
-        The deposit covers a missed payment. You lock it now and get back what&apos;s left at the end.
+        The deposit covers a round if you miss one. You lock it now and take back what&apos;s left at the end.
       </p>
       {error && <p className="field-error">{error}</p>}
-      <button className="btn btn-primary" disabled={!props.connected || props.busy}>
-        {props.connected ? "Open circle" : "Connect a wallet to open a circle"}
+      <button className="btn btn-brand" disabled={!props.connected || props.busy}>
+        {props.connected ? "Open the circle" : "Connect a wallet to open a circle"}
       </button>
     </form>
   );
