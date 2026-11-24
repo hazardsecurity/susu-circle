@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.env*.local
+.DS_Store
+move/build/
+move/traces/
+publish.json
+*.tsbuildinfo
+next-env.d.ts
+.claude/
